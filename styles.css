@@ -580,11 +580,11 @@ button {
   font-weight: 750;
 }
 
-.positive-text {
+.data-table td.positive-text {
   color: var(--green);
 }
 
-.negative-text {
+.data-table td.negative-text {
   color: var(--red);
 }
 
