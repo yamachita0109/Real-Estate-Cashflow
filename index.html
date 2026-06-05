@@ -18,16 +18,13 @@
         <h1>不動産投資CFシミュレーター</h1>
       </div>
       <div class="topbar-actions">
-        <label class="storage-select">
-          <span>保存先</span>
-          <select id="storageMode">
-            <option value="local">ローカルストレージ</option>
-            <option value="cookie">Cookie</option>
-          </select>
+        <label class="property-select">
+          <span>保存物件</span>
+          <select id="propertySelector"></select>
         </label>
-        <button class="ghost-button" id="loadSampleButton" type="button">サンプル</button>
-        <button class="ghost-button" id="resetButton" type="button">リセット</button>
-        <button class="primary-button" id="exportButton" type="button">CSV出力</button>
+        <button class="ghost-button" id="resetButton" type="button">新規</button>
+        <button class="ghost-button" id="yamlImportButton" type="button">YML貼付</button>
+        <button class="ghost-button" id="yamlExportButton" type="button">YML表示</button>
       </div>
     </header>
 
@@ -38,7 +35,7 @@
             <p class="eyebrow">Inputs</p>
             <h2>入力条件</h2>
           </div>
-          <button class="text-button" id="clearStorageButton" type="button">保存削除</button>
+          <button class="text-button" id="clearStorageButton" type="button">物件削除</button>
         </div>
         <form id="scenarioForm" autocomplete="off">
           <div id="formSections"></div>
@@ -49,8 +46,8 @@
         <section class="summary-band">
           <div class="scenario-title">
             <p class="eyebrow">Scenario</p>
-            <h2 id="scenarioName">サンプル区分マンション</h2>
-            <p id="scenarioMeta">区分マンション / 東京都 / 築15年</p>
+            <h2 id="scenarioName">名称未設定</h2>
+            <p id="scenarioMeta">種別未設定 / 所在地未設定</p>
           </div>
           <div class="judge-card" id="judgeCard">
             <span id="judgeLabel">判定</span>
@@ -101,6 +98,24 @@
         </section>
       </section>
     </main>
+
+    <div class="yaml-modal" id="yamlModal" role="dialog" aria-modal="true" aria-labelledby="yamlModalTitle" hidden>
+      <section class="yaml-panel">
+        <div class="yaml-panel-header">
+          <div>
+            <p class="eyebrow">YML</p>
+            <h2 id="yamlModalTitle">YML</h2>
+          </div>
+          <button class="text-button" id="yamlCloseButton" type="button">閉じる</button>
+        </div>
+        <p class="yaml-help" id="yamlModalHelp"></p>
+        <textarea id="yamlText" spellcheck="false"></textarea>
+        <div class="yaml-actions">
+          <button class="ghost-button" id="yamlCopyButton" type="button">コピー</button>
+          <button class="primary-button" id="yamlApplyButton" type="button">取り込む</button>
+        </div>
+      </section>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>

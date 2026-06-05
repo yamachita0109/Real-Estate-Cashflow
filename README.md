@@ -10,7 +10,8 @@
 - 損益分岐家賃、損益分岐空室率の表示
 - 初期費用、月次CF、年次CF、ローン残債、退去費用、感度分析のグラフ表示
 - ローカルストレージまたはCookieへの保存
-- CSVエクスポート
+- 保存済み物件の選択
+- YMLのコピー＆ペーストによるインポート、エクスポート
 
 ## ローカル確認
 
@@ -22,12 +23,12 @@
 python3 -m http.server 3000
 ```
 
-## Vercelデプロイ
+## GitHub Pagesデプロイ
 
-VercelのFramework Presetは `Other` を選択。
+GitHub ActionsからGitHub Pagesへ静的ファイルをデプロイする。
 
-- Build Command: 空欄
-- Output Directory: `.`
-- Install Command: 空欄
+- Source: GitHub Actions
+- Build Command: なし
+- 公開対象: リポジトリルート
 
-GitHub連携後は、Pull RequestでPreviewデプロイ、mainブランチでProductionデプロイ。
+`main` ブランチへのpushで自動デプロイ。

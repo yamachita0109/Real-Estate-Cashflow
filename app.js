@@ -1,7 +1,9 @@
 "use strict";
 
-const STORAGE_KEY = "toushi.cashflow.v1";
-const COOKIE_KEY = "toushi_cashflow_v1";
+const STORAGE_KEY = "toushi.cashflow.properties.v1";
+const LEGACY_STORAGE_KEY = "toushi.cashflow.v1";
+const COOKIE_KEY = "toushi_cashflow_properties_v1";
+const LEGACY_COOKIE_KEY = "toushi_cashflow_v1";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 180;
 
 const palette = {
@@ -19,55 +21,55 @@ const palette = {
 };
 
 const defaultScenario = {
-  propertyName: "サンプル区分マンション",
-  propertyType: "区分マンション",
-  location: "東京都",
-  buildingAge: 15,
-  floorArea: 32,
-  propertyPrice: 20000000,
-  downPayment: 2000000,
-  loanAmount: 18000000,
-  loanYears: 30,
-  interestRate: 2,
-  loanFee: 220000,
+  propertyName: "",
+  propertyType: "",
+  location: "",
+  buildingAge: 0,
+  floorArea: 0,
+  propertyPrice: 0,
+  downPayment: 0,
+  loanAmount: 0,
+  loanYears: 0,
+  interestRate: 0,
+  loanFee: 0,
   guaranteeFee: 0,
-  monthlyRent: 95000,
-  commonIncome: 5000,
+  monthlyRent: 0,
+  commonIncome: 0,
   parkingIncome: 0,
   otherIncome: 0,
-  vacancyRate: 5,
-  rentDeclineRate: 0.5,
-  managementFeeRate: 5,
-  buildingManagementFee: 8000,
-  reserveFund: 10000,
-  propertyTaxAnnual: 70000,
-  cityPlanningTaxAnnual: 10000,
-  fireInsuranceAnnual: 24000,
-  earthquakeInsuranceAnnual: 6000,
-  repairReserveMonthly: 8000,
-  otherMonthlyCost: 3000,
+  vacancyRate: 0,
+  rentDeclineRate: 0,
+  managementFeeRate: 0,
+  buildingManagementFee: 0,
+  reserveFund: 0,
+  propertyTaxAnnual: 0,
+  cityPlanningTaxAnnual: 0,
+  fireInsuranceAnnual: 0,
+  earthquakeInsuranceAnnual: 0,
+  repairReserveMonthly: 0,
+  otherMonthlyCost: 0,
   otherAnnualCost: 0,
-  brokerageFee: 726000,
-  registrationCost: 180000,
-  judicialScrivenerFee: 90000,
-  stampTax: 10000,
-  acquisitionTax: 250000,
-  propertyTaxSettlement: 50000,
-  initialInsuranceCost: 30000,
-  loanAdminFee: 110000,
-  initialRenovationCost: 250000,
-  equipmentCost: 80000,
-  otherInitialCost: 50000,
-  moveOutCycleYears: 4,
-  vacancyMonthsOnTurnover: 2,
-  restorationCost: 120000,
-  cleaningCost: 35000,
-  advertisingFeeMonths: 1,
-  leasingCommissionMonths: 1,
-  keyReplacementCost: 20000,
-  depositSettlement: 50000,
-  turnoverRentDeclineRate: 1,
-  targetCashOnCash: 6,
+  brokerageFee: 0,
+  registrationCost: 0,
+  judicialScrivenerFee: 0,
+  stampTax: 0,
+  acquisitionTax: 0,
+  propertyTaxSettlement: 0,
+  initialInsuranceCost: 0,
+  loanAdminFee: 0,
+  initialRenovationCost: 0,
+  equipmentCost: 0,
+  otherInitialCost: 0,
+  moveOutCycleYears: 0,
+  vacancyMonthsOnTurnover: 0,
+  restorationCost: 0,
+  cleaningCost: 0,
+  advertisingFeeMonths: 0,
+  leasingCommissionMonths: 0,
+  keyReplacementCost: 0,
+  depositSettlement: 0,
+  turnoverRentDeclineRate: 0,
+  targetCashOnCash: 0,
 };
 
 const formSections = [
@@ -169,7 +171,13 @@ let toastTimer = null;
 
 const formEl = document.getElementById("scenarioForm");
 const formSectionsEl = document.getElementById("formSections");
-const storageModeEl = document.getElementById("storageMode");
+const propertySelectorEl = document.getElementById("propertySelector");
+const yamlModalEl = document.getElementById("yamlModal");
+const yamlModalTitleEl = document.getElementById("yamlModalTitle");
+const yamlModalHelpEl = document.getElementById("yamlModalHelp");
+const yamlTextEl = document.getElementById("yamlText");
+const yamlCopyButtonEl = document.getElementById("yamlCopyButton");
+const yamlApplyButtonEl = document.getElementById("yamlApplyButton");
 const kpiGridEl = document.getElementById("kpiGrid");
 const chartStageEl = document.getElementById("chartStage");
 const monthlyTableEl = document.getElementById("monthlyTable");
@@ -182,6 +190,8 @@ bindEvents();
 renderApp();
 
 function renderForm() {
+  syncActiveProperty();
+  renderPropertySelector();
   formSectionsEl.innerHTML = formSections
     .map((section) => {
       const fields = section.fields.map(renderField).join("");
@@ -201,7 +211,18 @@ function renderForm() {
     }
   });
 
-  storageModeEl.value = state.storageMode;
+}
+
+function renderPropertySelector() {
+  const activeProperty = syncActiveProperty();
+  propertySelectorEl.innerHTML = state.properties
+    .map((property) => {
+      const label = propertyLabel(property);
+      const selected = property.id === activeProperty.id ? "selected" : "";
+      return `<option value="${escapeHtml(property.id)}" ${selected}>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+  propertySelectorEl.value = activeProperty.id;
 }
 
 function renderField(field) {
@@ -220,6 +241,7 @@ function renderField(field) {
   if (field.type === "select") {
     control = `
       <select id="${id}" name="${field.key}">
+        <option value="" ${value === "" ? "selected" : ""}>未選択</option>
         ${field.options
           .map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`)
           .join("")}
@@ -250,38 +272,63 @@ function bindEvents() {
     if (!field) return;
     state.values[target.name] = field.type === "text" || field.type === "select" ? target.value : toNumber(target.value);
     persistScenario();
+    if (target.name === "propertyName" || target.name === "location") {
+      renderPropertySelector();
+    }
     renderApp();
   });
 
-  storageModeEl.addEventListener("change", () => {
-    state.storageMode = storageModeEl.value;
-    persistScenario();
-    showToast(`${storageModeEl.options[storageModeEl.selectedIndex].text}に保存します`);
-  });
-
-  document.getElementById("loadSampleButton").addEventListener("click", () => {
-    state.values = { ...defaultScenario };
+  propertySelectorEl.addEventListener("change", () => {
+    const property = state.properties.find((item) => item.id === propertySelectorEl.value);
+    if (!property) return;
+    state.activePropertyId = property.id;
+    state.values = property.values;
     renderForm();
     persistScenario();
     renderApp();
-    showToast("サンプル値を読み込みました");
+    showToast("保存物件を切り替えました");
   });
 
   document.getElementById("resetButton").addEventListener("click", () => {
-    state.values = createEmptyScenario();
+    const property = createProperty();
+    state.properties.push(property);
+    state.activePropertyId = property.id;
+    state.values = property.values;
     renderForm();
     persistScenario();
     renderApp();
-    showToast("入力値をリセットしました");
+    showToast("新規物件を作成しました");
   });
 
   document.getElementById("clearStorageButton").addEventListener("click", () => {
-    clearStoredScenario();
-    showToast("保存データを削除しました");
+    deleteActiveProperty();
+    renderForm();
+    persistScenario();
+    renderApp();
   });
 
-  document.getElementById("exportButton").addEventListener("click", () => {
-    exportCsv(calculate(state.values));
+  document.getElementById("yamlImportButton").addEventListener("click", () => {
+    openYamlModal("import");
+  });
+
+  document.getElementById("yamlExportButton").addEventListener("click", () => {
+    openYamlModal("export");
+  });
+
+  document.getElementById("yamlCloseButton").addEventListener("click", closeYamlModal);
+
+  yamlModalEl.addEventListener("click", (event) => {
+    if (event.target === yamlModalEl) closeYamlModal();
+  });
+
+  yamlCopyButtonEl.addEventListener("click", copyYamlText);
+
+  yamlApplyButtonEl.addEventListener("click", importYamlText);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !yamlModalEl.hidden) {
+      closeYamlModal();
+    }
   });
 
   document.querySelectorAll(".tab-button").forEach((button) => {
@@ -958,12 +1005,14 @@ function emptyChart(message) {
 }
 
 function loadScenario() {
-  const base = { storageMode: "local", values: { ...defaultScenario } };
-
   try {
     const local = window.localStorage.getItem(STORAGE_KEY);
     if (local) {
       return normalizeLoadedState(JSON.parse(local), "local");
+    }
+    const legacyLocal = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyLocal) {
+      return normalizeLegacyState(JSON.parse(legacyLocal), "local");
     }
   } catch (error) {
     console.warn("localStorage load failed", error);
@@ -978,49 +1027,287 @@ function loadScenario() {
     }
   }
 
-  return base;
+  const legacyCookie = readCookie(LEGACY_COOKIE_KEY);
+  if (legacyCookie) {
+    try {
+      return normalizeLegacyState(JSON.parse(legacyCookie), "cookie");
+    } catch (error) {
+      console.warn("legacy cookie load failed", error);
+    }
+  }
+
+  return createState([createProperty()]);
 }
 
 function normalizeLoadedState(loaded, fallbackMode) {
   if (!loaded || typeof loaded !== "object") {
-    return { storageMode: fallbackMode, values: { ...defaultScenario } };
+    return createState([createProperty()], fallbackMode);
   }
+  if (!Array.isArray(loaded.properties)) {
+    return normalizeLegacyState(loaded, fallbackMode);
+  }
+  const properties = loaded.properties
+    .map((property) => createProperty(property.values, property.id))
+    .filter((property) => property.id);
+  return createState(properties.length > 0 ? properties : [createProperty()], fallbackMode, loaded.activePropertyId);
+}
+
+function normalizeLegacyState(loaded, fallbackMode) {
+  if (!loaded || typeof loaded !== "object") {
+    return createState([createProperty()], fallbackMode);
+  }
+  return createState([createProperty(loaded.values || loaded)], fallbackMode);
+}
+
+function createState(properties, storageMode = "local", activePropertyId = "") {
+  const nextState = {
+    storageMode,
+    activePropertyId: activePropertyId || properties[0]?.id || "",
+    properties,
+    values: {},
+  };
+  syncActiveProperty(nextState);
+  return nextState;
+}
+
+function createProperty(values = createEmptyScenario(), id = createPropertyId()) {
   return {
-    storageMode: loaded.storageMode === "cookie" ? "cookie" : fallbackMode,
-    values: { ...defaultScenario, ...(loaded.values || loaded) },
+    id,
+    values: normalizeValues(values),
   };
 }
 
-function persistScenario() {
-  const payload = JSON.stringify({ storageMode: state.storageMode, values: state.values });
-  if (state.storageMode === "cookie") {
-    writeCookie(COOKIE_KEY, payload);
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.warn("localStorage remove failed", error);
-    }
-    return;
+function createPropertyId() {
+  return `property-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function syncActiveProperty(targetState = state) {
+  if (!Array.isArray(targetState.properties) || targetState.properties.length === 0) {
+    targetState.properties = [createProperty()];
   }
+  let activeProperty = targetState.properties.find((property) => property.id === targetState.activePropertyId);
+  if (!activeProperty) {
+    activeProperty = targetState.properties[0];
+    targetState.activePropertyId = activeProperty.id;
+  }
+  activeProperty.values = normalizeValues(activeProperty.values);
+  targetState.values = activeProperty.values;
+  return activeProperty;
+}
+
+function propertyLabel(property) {
+  const values = property.values || {};
+  const name = values.propertyName || "名称未設定";
+  return values.location ? `${name} / ${values.location}` : name;
+}
+
+function persistScenario() {
+  syncActiveProperty();
+  const payload = JSON.stringify({
+    activePropertyId: state.activePropertyId,
+    properties: state.properties,
+  });
 
   try {
     window.localStorage.setItem(STORAGE_KEY, payload);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    state.storageMode = "local";
     document.cookie = `${COOKIE_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
+    document.cookie = `${LEGACY_COOKIE_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
   } catch (error) {
     writeCookie(COOKIE_KEY, payload);
     state.storageMode = "cookie";
-    storageModeEl.value = "cookie";
     showToast("ローカルストレージが使えないためCookieに保存しました");
   }
 }
 
-function clearStoredScenario() {
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.warn("localStorage clear failed", error);
+function deleteActiveProperty() {
+  const activeProperty = syncActiveProperty();
+  const deletedLabel = propertyLabel(activeProperty);
+  if (state.properties.length <= 1) {
+    const property = createProperty();
+    state.properties = [property];
+    state.activePropertyId = property.id;
+    state.values = property.values;
+    showToast("物件を初期化しました");
+    return;
   }
-  document.cookie = `${COOKIE_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
+  state.properties = state.properties.filter((property) => property.id !== activeProperty.id);
+  state.activePropertyId = state.properties[0].id;
+  state.values = state.properties[0].values;
+  showToast(`${deletedLabel}を削除しました`);
+}
+
+function openYamlModal(mode) {
+  const isExport = mode === "export";
+  yamlModalTitleEl.textContent = isExport ? "YML表示" : "YML貼付";
+  yamlModalHelpEl.textContent = isExport
+    ? "保存済み物件一覧のYMLです。選択してコピーできます。"
+    : "YMLを貼り付けて取り込むと、現在の保存済み物件一覧を置き換えます。";
+  yamlTextEl.value = isExport ? stringifyPropertiesYaml() : "";
+  yamlCopyButtonEl.hidden = !isExport;
+  yamlApplyButtonEl.hidden = isExport;
+  yamlModalEl.hidden = false;
+  yamlTextEl.focus();
+  if (isExport) {
+    yamlTextEl.select();
+  }
+}
+
+function closeYamlModal() {
+  yamlModalEl.hidden = true;
+}
+
+function copyYamlText() {
+  yamlTextEl.select();
+  const text = yamlTextEl.value;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => showToast("YMLをコピーしました"))
+      .catch(() => fallbackCopyYamlText());
+    return;
+  }
+  fallbackCopyYamlText();
+}
+
+function fallbackCopyYamlText() {
+  yamlTextEl.select();
+  document.execCommand("copy");
+  showToast("YMLをコピーしました");
+}
+
+function importYamlText() {
+  const source = yamlTextEl.value.trim();
+  if (!source) {
+    showToast("YMLを貼り付けてください");
+    return;
+  }
+
+  try {
+    const importedState = parsePropertiesYaml(source);
+    if (!window.confirm("現在の保存物件をYMLの内容で置き換えます。よろしいですか？")) {
+      return;
+    }
+    state = importedState;
+    renderForm();
+    persistScenario();
+    renderApp();
+    closeYamlModal();
+    showToast(`${state.properties.length}件の物件を取り込みました`);
+  } catch (error) {
+    console.warn("YML import failed", error);
+    showToast("YMLの形式を確認してください");
+  }
+}
+
+function stringifyPropertiesYaml() {
+  const keys = Object.keys(defaultScenario);
+  const activeProperty = syncActiveProperty();
+  const activePropertyIndex = Math.max(0, state.properties.findIndex((property) => property.id === activeProperty.id));
+  const lines = ["version: 1", `activePropertyIndex: ${activePropertyIndex}`, "properties:"];
+
+  state.properties.forEach((property) => {
+    const values = normalizeValues(property.values);
+    const [firstKey, ...restKeys] = keys;
+    lines.push(`  - ${firstKey}: ${yamlScalar(values[firstKey])}`);
+    restKeys.forEach((key) => {
+      lines.push(`    ${key}: ${yamlScalar(values[key])}`);
+    });
+  });
+
+  return `${lines.join("\n")}\n`;
+}
+
+function parsePropertiesYaml(source) {
+  const properties = [];
+  let activePropertyIndex = 0;
+  let inProperties = false;
+  let currentValues = null;
+
+  String(source)
+    .replace(/\r/g, "")
+    .split("\n")
+    .forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+
+      const activeMatch = trimmed.match(/^activePropertyIndex:\s*(.+)$/);
+      if (activeMatch) {
+        activePropertyIndex = Math.max(0, toNumber(parseYamlScalar(activeMatch[1])));
+        return;
+      }
+
+      if (trimmed === "properties:") {
+        inProperties = true;
+        return;
+      }
+
+      if (!inProperties) return;
+
+      const itemMatch = line.match(/^  -(?:\s+(.+))?$/);
+      if (itemMatch) {
+        currentValues = {};
+        properties.push(currentValues);
+        if (itemMatch[1]) {
+          assignYamlField(currentValues, itemMatch[1]);
+        }
+        return;
+      }
+
+      const fieldMatch = line.match(/^    (.+)$/);
+      if (fieldMatch && currentValues) {
+        assignYamlField(currentValues, fieldMatch[1]);
+        return;
+      }
+
+      throw new Error("Invalid YML format");
+    });
+
+  if (properties.length === 0) {
+    throw new Error("YML contains no properties");
+  }
+
+  const importedProperties = properties.map((values) => createProperty(values));
+  const activeProperty = importedProperties[Math.min(activePropertyIndex, importedProperties.length - 1)];
+  return createState(importedProperties, "local", activeProperty.id);
+}
+
+function assignYamlField(target, source) {
+  const match = source.match(/^([A-Za-z][A-Za-z0-9]*):\s*(.*)$/);
+  if (!match) {
+    throw new Error("Invalid YML field");
+  }
+
+  const [, key, rawValue] = match;
+  if (!(key in defaultScenario)) return;
+
+  const field = getField(key);
+  const value = parseYamlScalar(rawValue);
+  target[key] = field?.type === "text" || field?.type === "select" ? String(value ?? "") : toNumber(value);
+}
+
+function yamlScalar(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : "0";
+  }
+  return JSON.stringify(String(value ?? ""));
+}
+
+function parseYamlScalar(value) {
+  const text = String(value ?? "").trim();
+  if (text === "" || text === "null" || text === "~") return "";
+  if (text.startsWith('"') && text.endsWith('"')) {
+    return JSON.parse(text);
+  }
+  if (text.startsWith("'") && text.endsWith("'")) {
+    return text.slice(1, -1).replaceAll("''", "'");
+  }
+  if (/^(true|false)$/i.test(text)) {
+    return text.toLowerCase() === "true";
+  }
+  const number = Number(text);
+  return Number.isFinite(number) ? number : text;
 }
 
 function readCookie(name) {
@@ -1034,42 +1321,6 @@ function readCookie(name) {
 
 function writeCookie(name, value) {
   document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${COOKIE_MAX_AGE}; Path=/; SameSite=Lax`;
-}
-
-function exportCsv(result) {
-  const rows = [
-    ["項目", "値"],
-    ["物件名", result.values.propertyName],
-    ["物件種別", result.values.propertyType],
-    ["所在地", result.values.location],
-    ["物件価格", result.values.propertyPrice],
-    ["必要自己資金", Math.round(result.initial.requiredEquity)],
-    ["月次CF", Math.round(result.monthly.cashflow)],
-    ["年次CF", Math.round(result.annual.cashflow)],
-    ["退去考慮後年次CF", Math.round(result.turnover.annualCashflowAfterTurnover)],
-    ["表面利回り", formatPercent(result.yields.grossYield)],
-    ["実質利回り", formatPercent(result.yields.netYield)],
-    ["自己資金利回り", formatPercent(result.yields.cashOnCash)],
-    ["DSCR", formatRatio(result.yields.dscr)],
-    ["退去1回損失", Math.round(result.turnover.eventLoss)],
-    ["年換算退去コスト", Math.round(result.turnover.annualizedCost)],
-  ];
-  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
-  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `cashflow-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  showToast("CSVを出力しました");
-}
-
-function csvCell(value) {
-  const text = String(value ?? "");
-  return `"${text.replaceAll('"', '""')}"`;
 }
 
 function createEmptyScenario() {

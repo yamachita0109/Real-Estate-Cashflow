@@ -96,7 +96,7 @@ button {
   flex-wrap: wrap;
 }
 
-.storage-select {
+.property-select {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -105,7 +105,8 @@ button {
   font-weight: 700;
 }
 
-.storage-select select {
+.property-select select {
+  width: min(280px, 42vw);
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -650,6 +651,75 @@ button {
   transform: translateY(0);
 }
 
+.yaml-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(32, 33, 36, 0.42);
+}
+
+.yaml-modal[hidden] {
+  display: none;
+}
+
+.yaml-panel {
+  width: min(900px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(92, 83, 66, 0.18);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(32, 33, 36, 0.22);
+}
+
+.yaml-panel-header,
+.yaml-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.yaml-panel-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.yaml-panel-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.yaml-help {
+  margin: 0;
+  padding: 12px 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#yamlText {
+  min-height: 420px;
+  margin: 0 18px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.yaml-actions {
+  justify-content: flex-end;
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -683,11 +753,11 @@ button {
   }
 
   .topbar-actions,
-  .storage-select {
+  .property-select {
     width: 100%;
   }
 
-  .storage-select select,
+  .property-select select,
   .topbar-actions button {
     flex: 1 1 auto;
   }
@@ -724,6 +794,10 @@ button {
 
   .tab-button {
     flex: 1 1 120px;
+  }
+
+  #yamlText {
+    min-height: 340px;
   }
 
   .scenario-title h2 {
